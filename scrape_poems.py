@@ -42,7 +42,7 @@ def value_to_float(x):
 def parse_info(info):
     info = info.replace("views", "").replace("+list", "")
     info = " ".join(info.split())
-    return (value_to_float(item) for item in info.split(" "))[:2]
+    return [value_to_float(item) for item in info.split(" ")][:2]
 
 
 def filter_triple_newline(text):
