@@ -7,6 +7,7 @@ from tqdm import tqdm
 from lm_dataformat import Archive, Reader
 import os
 import argparse
+import random
 
 
 # format :: https://allpoetry.com/poem/[number]
@@ -47,6 +48,10 @@ def filter_triple_newline(text):
     return re.sub("\n\n+", "\n\n", text)
 
 
+def replace_carriage_return(text):
+    return re.sub("\r", "\n", text)
+
+
 def scrape_poem(poem_id):
     """
     scrape a single poem from allpoetry.com/poem/[poem_id]
@@ -66,7 +71,7 @@ def scrape_poem(poem_id):
     title = poem.find("h1", {"class": re.compile('.*title.*')}).text
     body = poem.find("div", {"class": re.compile('^orig_.*')}).text
     return {"id": poem_id, "views": views, "likes": likes, "comments": comments,
-            "text": filter_triple_newline(title + "\n\n" + body)}
+            "text": replace_carriage_return(filter_triple_newline(title + "\n\n" + body))}
 
 
 def scrape_poem_mp(i):
@@ -103,7 +108,8 @@ def main(total_poems, chunk_size, pool, start_poem=1, commit_every=50, verbose=F
         poems = pool.map(scrape_poem_mp, chunk)
         poems = [p for p in poems if p is not None]
         if verbose:
-            print(poems[0]["text"])
+            rnd = random.randint(0, len(poems))
+            print('\n', poems[rnd]["id"], "\n", poems[rnd]["text"], '\n')
         for poem in poems:
             ar.add_data(poem["text"], meta={
                 'id': poem["id"],
@@ -163,7 +169,7 @@ def process_args():
                         default=1,
                         type=int)
     parser.add_argument('--chunk_size', help='size of multiprocessing chunks (default: 500)',
-                            default=1000,
+                        default=1000,
                         type=int)
     parser.add_argument('-a', '--all', action='store_true',
                         help="if this flag is set *all poems* up until the latest poem will be scraped")
@@ -179,5 +185,5 @@ if __name__ == "__main__":
     else:
         latest_id = args.latest_id
     cpu_no = cpu_count()
-    p = Pool(cpu_no*6)
+    p = Pool(cpu_no * 6)
     main(latest_id, args.chunk_size, start_poem=args.start_id, pool=p, verbose=args.verbose)
