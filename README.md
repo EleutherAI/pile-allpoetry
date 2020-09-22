@@ -26,14 +26,15 @@ All usage options:
 
 ```
 usage: scrape_poems.py [-h] [--latest_id LATEST_ID] [--start_id START_ID]
-                       [--chunk_size CHUNK_SIZE] [-a] [-v]
+                       [--chunk_size CHUNK_SIZE] [-a] [-v] [-c]
 
 CLI for allpoetry dataset - A tool for scraping poems from allpoetry.com
 
 optional arguments:
   -h, --help            show this help message and exit
   --latest_id LATEST_ID
-                        scrape from start_id to latest_id poems (default: 100000)
+                        scrape from start_id to latest_id poems (default:
+                        100000)
   --start_id START_ID   scrape from start_id to latest_id poems (default: 1)
   --chunk_size CHUNK_SIZE
                         size of multiprocessing chunks (default: 500)
@@ -41,4 +42,6 @@ optional arguments:
                         poem will be scraped
   -v, --verbose         if this flag is set a poem will be printed out every
                         chunk
+  -c, --checkpoint      if this flag is set a the scraper will resume from the
+                        poem id in out/checkpoint.txt
 ```
