@@ -138,7 +138,7 @@ def main(latest_poem, chunk_size, pool, start_poem=1, commit_every=50, verbose=F
     for chunk in pbar:
         poems = pool.map(scrape_poem_mp, chunk)
         poems = [p for p in poems if p is not None]
-        rnd = random.randint(0, len(poems))
+        rnd = random.randint(0, len(poems)-1)
         n_poems = len(poems)
         success_rate = (n_poems / chunk_size) * 100
         pbar.set_postfix({'Success Rate': success_rate})
