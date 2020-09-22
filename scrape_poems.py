@@ -146,12 +146,18 @@ def main(latest_poem, chunk_size, pool, start_poem=1, commit_every=50, verbose=F
             if n_poems > 0:
                 print('\n', poems[rnd]["id"], "\n", poems[rnd]["text"], '\n')
         for poem in poems:
-            ar.add_data(poem["text"], meta={
-                'id': poem["id"],
-                'views': poem["views"],
-                'comments': poem["comments"],
-                'likes': poem["likes"]
-            })
+            try:
+                ar.add_data(poem["text"], meta={
+                    'id': poem["id"],
+                    'views': poem["views"],
+                    'comments': poem["comments"],
+                    'likes': poem["likes"]
+                })
+            except:
+                try:
+                    ar.add_data(poem["text"])
+                except:
+                    traceback.print_exc()
         count += 1
         if count % commit_every == 0:
             ar.commit()
