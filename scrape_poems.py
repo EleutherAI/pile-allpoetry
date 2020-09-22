@@ -8,6 +8,7 @@ from lm_dataformat import Archive, Reader
 import os
 import argparse
 import random
+import time
 
 
 # format :: https://allpoetry.com/poem/[number]
@@ -61,7 +62,7 @@ def scrape_poem(poem_id):
     """
     response = requests.get("https://allpoetry.com/poem/{}".format(poem_id))
     if response.status_code != 200:
-        raise ConnectionError("Response code != 200")
+        raise ConnectionError("Response code = {}".format(response.status_code))
     soup = bs(response.content, "html.parser")
     info = soup.find("div", {"class": re.compile('.*item-info.*')}).text
     views, comments = parse_info(info)
@@ -74,7 +75,7 @@ def scrape_poem(poem_id):
             "text": replace_carriage_return(filter_triple_newline(title + "\n\n" + body))}
 
 
-def scrape_poem_mp(i):
+def scrape_poem_mp(i, max_retries=5, sleep_time=5):
     """
     wrapper fn for scrape_poem
     """
@@ -86,6 +87,26 @@ def scrape_poem_mp(i):
             pass
     except:
         traceback.print_exc()
+
+        def retry():
+            print("Looks like you're getting rate limited! Sleeping for a few seconds and trying again...")
+            time.sleep(sleep_time)
+            try:
+                try:
+                    poem = scrape_poem(i)
+                    return poem
+                except (AttributeError, ConnectionError):
+                    pass
+            except:
+                traceback.print_exc()
+                return None
+
+        count = 0
+        while count < max_retries:
+            poem = retry()
+            count += 1
+            if poem is not None:
+                return poem
 
 
 def main(total_poems, chunk_size, pool, start_poem=1, commit_every=50, verbose=False):
@@ -104,12 +125,17 @@ def main(total_poems, chunk_size, pool, start_poem=1, commit_every=50, verbose=F
     chunks = split_into_chunks(range(start_poem, start_poem + total_poems), chunk_size)
     ar = Archive('out')
     count = 0
-    for chunk in tqdm(chunks, total=len(chunks), unit_scale=chunk_size):
+    pbar = tqdm(chunks, total=len(chunks), unit_scale=chunk_size)
+    for chunk in pbar:
         poems = pool.map(scrape_poem_mp, chunk)
         poems = [p for p in poems if p is not None]
+        rnd = random.randint(0, len(poems))
+        n_poems = len(poems)
+        success_rate = (n_poems / chunk_size) * 100
+        pbar.set_postfix({'Success Rate': success_rate})
         if verbose:
-            rnd = random.randint(0, len(poems))
-            print('\n', poems[rnd]["id"], "\n", poems[rnd]["text"], '\n')
+            if n_poems > 0:
+                print('\n', poems[rnd]["id"], "\n", poems[rnd]["text"], '\n')
         for poem in poems:
             ar.add_data(poem["text"], meta={
                 'id': poem["id"],
@@ -142,18 +168,14 @@ def read(input_dir_or_file):
 
 def get_new_poem_id():
     """
-    Grabs a recent poem ID from allpoetry.com homepage so the scraper knows how many poems to scrape.
-
-    To get the *very latest* poem id you'd need to render JS on the homepage - this method mostly returns poems
-    from the same day, so works well enough.
+    Grabs the newest poem ID from https://allpoetry.com/poems/newest so the scraper knows how many poems to scrape in total.
 
     :return: int, poem_id
     """
-    response = requests.get("https://allpoetry.com/#t_newest")
+    response = requests.get("https://allpoetry.com/poems/newest")
     if response.status_code != 200:
         raise ConnectionError("Response code != 200")
     soup = bs(response.content, "html.parser")
-    # items_group t_newest hidden inf
     new = soup.find("div", {"class": re.compile('.*items_group.*')})
     url = int(new.find("a", {"href": re.compile('^/poem/.*')})["href"].replace("/poem/", "").split("-")[0])
     return url
@@ -185,5 +207,5 @@ if __name__ == "__main__":
     else:
         latest_id = args.latest_id
     cpu_no = cpu_count()
-    p = Pool(cpu_no * 6)
+    p = Pool(cpu_no * 3)
     main(latest_id, args.chunk_size, start_poem=args.start_id, pool=p, verbose=args.verbose)
