@@ -109,7 +109,7 @@ def scrape_poem_mp(i, max_retries=5, sleep_time=5):
                 return poem
 
 
-def main(latest_poem, chunk_size, pool, start_poem=1, commit_every=50, verbose=False):
+def main(latest_poem, chunk_size, pool, start_poem=1, commit_every=50, verbose=False, checkpoint=True):
     """
     scrape total_poems poems from allpoetry.com starting at poem_id = start_poem,
     and save them to a jsonl.zst object
@@ -122,6 +122,15 @@ def main(latest_poem, chunk_size, pool, start_poem=1, commit_every=50, verbose=F
     :return:
 
     """
+    if checkpoint:
+        if os.path.isfile("out/checkpoint.txt"):
+            with open("out/checkpoint.txt", "r") as f:
+                f = f.readlines()
+                out = ""
+                for l in f:
+                    out += l
+                start_poem = int(out.strip())
+                print("Resuming from poem id {}".format(start_poem))
     chunks = split_into_chunks(range(start_poem, latest_poem), chunk_size)
     ar = Archive('out')
     count = 0
@@ -144,9 +153,10 @@ def main(latest_poem, chunk_size, pool, start_poem=1, commit_every=50, verbose=F
                 'likes': poem["likes"]
             })
         count += 1
-        if count == commit_every:
+        if count % commit_every == 0:
             ar.commit()
-            count = 0
+            with open("out/checkpoint.txt", "w") as f:
+                f.write("{}".format(start_poem + (count * chunk_size)))
     ar.commit()
 
 
@@ -197,6 +207,8 @@ def process_args():
                         help="if this flag is set *all poems* up until the latest poem will be scraped")
     parser.add_argument('-v', '--verbose', action='store_true',
                         help="if this flag is set a poem will be printed out every chunk")
+    parser.add_argument('-c', '--checkpoint', action='store_true',
+                        help="if this flag is set a the scraper will resume from the poem id in out/checkpoint.txt")
     return parser.parse_args()
 
 
@@ -208,4 +220,4 @@ if __name__ == "__main__":
         latest_id = args.latest_id
     cpu_no = cpu_count()
     p = Pool(cpu_no * 3)
-    main(latest_id, args.chunk_size, start_poem=args.start_id, pool=p, verbose=args.verbose)
+    main(latest_id, args.chunk_size, start_poem=args.start_id, pool=p, verbose=args.verbose, checkpoint=args.checkpoint)
