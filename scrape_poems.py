@@ -83,7 +83,7 @@ def scrape_poem_mp(i):
         traceback.print_exc()
 
 
-def main(total_poems, chunk_size, pool, start_poem=1, commit_every=100, verbose=False):
+def main(total_poems, chunk_size, pool, start_poem=1, commit_every=50, verbose=False):
     """
     scrape total_poems poems from allpoetry.com starting at poem_id = start_poem,
     and save them to a jsonl.zst object
@@ -115,7 +115,6 @@ def main(total_poems, chunk_size, pool, start_poem=1, commit_every=100, verbose=
         if count == commit_every:
             ar.commit()
             count = 0
-
     ar.commit()
 
 
@@ -148,6 +147,7 @@ def get_new_poem_id():
     if response.status_code != 200:
         raise ConnectionError("Response code != 200")
     soup = bs(response.content, "html.parser")
+    # items_group t_newest hidden inf
     new = soup.find("div", {"class": re.compile('.*items_group.*')})
     url = int(new.find("a", {"href": re.compile('^/poem/.*')})["href"].replace("/poem/", "").split("-")[0])
     return url
@@ -163,7 +163,7 @@ def process_args():
                         default=1,
                         type=int)
     parser.add_argument('--chunk_size', help='size of multiprocessing chunks (default: 500)',
-                        default=100,
+                            default=1000,
                         type=int)
     parser.add_argument('-a', '--all', action='store_true',
                         help="if this flag is set *all poems* up until the latest poem will be scraped")
@@ -179,5 +179,5 @@ if __name__ == "__main__":
     else:
         latest_id = args.latest_id
     cpu_no = cpu_count()
-    p = Pool(cpu_no*3)
+    p = Pool(cpu_no*6)
     main(latest_id, args.chunk_size, start_poem=args.start_id, pool=p, verbose=args.verbose)
