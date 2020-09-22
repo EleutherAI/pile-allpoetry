@@ -8,21 +8,18 @@ to scrape the first 100000 poems on the site:
 
 ```
 python scrape_poems.py
-
 ```
 
 to scrape all poems:
 
 ```
 python scrape_poems.py -a
-
 ```
 
 to scrape from poem 500000 to 1000000:
 
 ```
 python scrape_poems.py --start_id 500000 --latest_id 1000000
-
 ```
 
 All usage options:
