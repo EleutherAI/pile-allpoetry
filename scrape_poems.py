@@ -90,7 +90,7 @@ def main(total_poems, chunk_size, pool, start_poem=1, commit_every=100, verbose=
 
     :param total_poems: int, total poems to scrape
     :param chunk_size: number of poems per chunk
-    :param pool: multiprocessing poo,
+    :param pool: multiprocessing pool,
     :param start_poem: poem id to start from
     :param commit_every: commit archive every n chunks
     :return:
@@ -164,7 +164,7 @@ def process_args():
                         default=1,
                         type=int)
     parser.add_argument('--chunk_size', help='size of multiprocessing chunks (default: 500)',
-                        default=500,
+                        default=100,
                         type=int)
     parser.add_argument('-a', '--all', action='store_true',
                         help="if this flag is set *all poems* up until the latest poem will be scraped")
@@ -179,6 +179,6 @@ if __name__ == "__main__":
         latest_id = get_new_poem_id()
     else:
         latest_id = args.latest_id
-    cpu_no = cpu_count() - 1
+    cpu_no = cpu_count()
     p = Pool(cpu_no*3)
     main(latest_id, args.chunk_size, start_poem=args.start_id, pool=p, verbose=args.verbose)
