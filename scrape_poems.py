@@ -42,7 +42,7 @@ def value_to_float(x):
 def parse_info(info):
     info = info.replace("views", "").replace("+list", "")
     info = " ".join(info.split())
-    return (value_to_float(item) for item in info.split(" "))
+    return (value_to_float(item) for item in info.split(" "))[:2]
 
 
 def filter_triple_newline(text):
@@ -65,7 +65,11 @@ def scrape_poem(poem_id):
         raise ConnectionError("Response code = {}".format(response.status_code))
     soup = bs(response.content, "html.parser")
     info = soup.find("div", {"class": re.compile('.*item-info.*')}).text
-    views, comments = parse_info(info)
+    try:
+        views, comments = parse_info(info)
+    except ValueError as e:
+        print(e)
+        views, comments = 0.0, 0.0
     likes = value_to_float(
         soup.find("a", {"class": re.compile('^btn.*'), "alt": "Liked: "}).find("span", {"class": "num"}).text)
     poem = soup.find("div", {"class": "items_group main_poem"})
