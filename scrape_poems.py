@@ -148,7 +148,6 @@ def get_new_poem_id():
     if response.status_code != 200:
         raise ConnectionError("Response code != 200")
     soup = bs(response.content, "html.parser")
-    # items_group t_newest hidden inf
     new = soup.find("div", {"class": re.compile('.*items_group.*')})
     url = int(new.find("a", {"href": re.compile('^/poem/.*')})["href"].replace("/poem/", "").split("-")[0])
     return url
