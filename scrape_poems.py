@@ -109,7 +109,7 @@ def scrape_poem_mp(i, max_retries=5, sleep_time=5):
                 return poem
 
 
-def main(total_poems, chunk_size, pool, start_poem=1, commit_every=50, verbose=False):
+def main(latest_poem, chunk_size, pool, start_poem=1, commit_every=50, verbose=False):
     """
     scrape total_poems poems from allpoetry.com starting at poem_id = start_poem,
     and save them to a jsonl.zst object
@@ -122,7 +122,7 @@ def main(total_poems, chunk_size, pool, start_poem=1, commit_every=50, verbose=F
     :return:
 
     """
-    chunks = split_into_chunks(range(start_poem, start_poem + total_poems), chunk_size)
+    chunks = split_into_chunks(range(start_poem, latest_poem), chunk_size)
     ar = Archive('out')
     count = 0
     pbar = tqdm(chunks, total=len(chunks), unit_scale=chunk_size)
