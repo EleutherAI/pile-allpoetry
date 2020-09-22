@@ -156,21 +156,20 @@ def get_new_poem_id():
 
 def process_args():
     parser = argparse.ArgumentParser(
-        description='CLI for stackexchange_dataset - A tool for downloading & processing stackexchange dumps in xml form to a raw '
-                    'question-answer pair text dataset for Language Models')
-    parser.add_argument('--latest_id', help='scrape from start_id to latest_id poems',
+        description='CLI for allpoetry dataset - A tool for scraping poems from allpoetry.com')
+    parser.add_argument('--latest_id', help='scrape from start_id to latest_id poems (default: 100000)',
                         default=100000,
                         type=int)
-    parser.add_argument('--start_id', help='scrape from start_id to latest_id poems',
-                        default=100000,
+    parser.add_argument('--start_id', help='scrape from start_id to latest_id poems (default: 1)',
+                        default=1,
                         type=int)
-    parser.add_argument('--chunk_size', help='size of multiprocessing chunks',
+    parser.add_argument('--chunk_size', help='size of multiprocessing chunks (default: 500)',
                         default=500,
                         type=int)
     parser.add_argument('-a', '--all', action='store_true',
-                        help="if this flag is on *all poems* up until the latest poem will be scraped")
+                        help="if this flag is set *all poems* up until the latest poem will be scraped")
     parser.add_argument('-v', '--verbose', action='store_true',
-                        help="if this flag is on a poem will be printed out every chunk")
+                        help="if this flag is set a poem will be printed out every chunk")
     return parser.parse_args()
 
 
@@ -181,5 +180,5 @@ if __name__ == "__main__":
     else:
         latest_id = args.latest_id
     cpu_no = cpu_count() - 1
-    p = Pool(cpu_no)
+    p = Pool(cpu_no*3)
     main(latest_id, args.chunk_size, start_poem=args.start_id, pool=p, verbose=args.verbose)
