@@ -61,7 +61,7 @@ def scrape_poem(poem_id):
     :return: {id: poem_id, views: n_views, likes: n_likes, comments: n_comments, text: poem_text}
     """
     response = requests.get("https://allpoetry.com/poem/{}".format(poem_id))
-    if response.status_code != 200:
+    if response.status_code not in [200, 404]:
         raise ConnectionError("Response code = {}".format(response.status_code))
     soup = bs(response.content, "html.parser")
     info = soup.find("div", {"class": re.compile('.*item-info.*')}).text
@@ -89,7 +89,7 @@ def scrape_poem_mp(i, max_retries=5, sleep_time=5):
         traceback.print_exc()
 
         def retry():
-            print("Looks like you're getting rate limited! Sleeping for a few seconds and trying again...")
+            print("Looks like you're getting rate limited! Sleeping for {} seconds and trying again...".format(sleep_time))
             time.sleep(sleep_time)
             try:
                 try:
@@ -138,12 +138,12 @@ def main(latest_poem, chunk_size, pool, start_poem=1, commit_every=50, verbose=F
     for chunk in pbar:
         poems = pool.map(scrape_poem_mp, chunk)
         poems = [p for p in poems if p is not None]
-        rnd = random.randint(0, len(poems)-1)
         n_poems = len(poems)
         success_rate = (n_poems / chunk_size) * 100
         pbar.set_postfix({'Success Rate': success_rate})
         if verbose:
             if n_poems > 0:
+                rnd = random.randint(0, len(poems) - 1)
                 print('\n', poems[rnd]["id"], "\n", poems[rnd]["text"], '\n')
         for poem in poems:
             try:
